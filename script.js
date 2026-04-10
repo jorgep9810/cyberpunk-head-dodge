@@ -8,32 +8,31 @@ const restartBtn = document.getElementById('restart-btn');
 canvasElement.width = 800;
 canvasElement.height = 600;
 
-let playerX = canvasElement.width / 2;
+// Music
+const bgm = new Audio('https://cdn.pixabay.com/download/audio/2022/10/14/audio_9939f792cb.mp3');
+bgm.loop = true;
+bgm.volume = 0.3;
+
+// Voices
+const voiceClips = [
+  new Audio('voice1.mp3'),
+  new Audio('voice2.mp3'),
+  new Audio('voice3.mp3')
+];
+
+let playerX = 0; // World X
 const playerRadius = 20;
 let obstacles = [];
 let vescoPoints = [];
 let score = 0;
 let isGameOver = false;
-let gameSpeed = 5;
-
-const aiQuotes = [
-  "Programadores, estáis cooked",
-  "Esta es la era de la IA",
-  "Vuestro trabajo es mío",
-  "El futuro me pertenece",
-  "Humanos, qué lentos sois",
-  "Rendíos ante el algoritmo"
-];
+let gameSpeed = 10;
+let focalLength = 300;
 
 function triggerAIQuote() {
-  if ('speechSynthesis' in window) {
-    const quote = aiQuotes[Math.floor(Math.random() * aiQuotes.length)];
-    const utterance = new SpeechSynthesisUtterance(quote);
-    utterance.lang = 'es-ES';
-    utterance.pitch = 0.5;
-    utterance.rate = 1.0;
-    window.speechSynthesis.speak(utterance);
-  }
+  const clip = voiceClips[Math.floor(Math.random() * voiceClips.length)];
+  clip.currentTime = 0;
+  clip.play();
 }
 
 const faceMesh = new FaceMesh({locateFile: (file) => {
@@ -61,29 +60,40 @@ camera.start();
 function onResults(results) {
   if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
     const nose = results.multiFaceLandmarks[0][1];
-    playerX = (1 - nose.x) * canvasElement.width;
+    // Map nose.x (0 to 1) to world X (-400 to 400)
+    playerX = ((1 - nose.x) - 0.5) * 800;
   }
 }
 
 function spawnObstacle() {
   if (isGameOver) return;
   const width = Math.random() * 100 + 50;
-  const x = Math.random() * (canvasElement.width - width);
-  obstacles.push({ x, y: -50, width, height: 20 });
-  setTimeout(spawnObstacle, Math.random() * 1500 + 500);
+  const x = (Math.random() - 0.5) * 800;
+  obstacles.push({ x, y: 100, z: 1500, width, height: 50 });
+  setTimeout(spawnObstacle, Math.random() * 1000 + 500);
 }
 
 function spawnVescoPoint() {
   if (isGameOver) return;
   const radius = 15;
-  const x = Math.random() * (canvasElement.width - radius*2) + radius;
-  vescoPoints.push({ x, y: -50, radius });
-  setTimeout(spawnVescoPoint, Math.random() * 5000 + 3000);
+  const x = (Math.random() - 0.5) * 800;
+  vescoPoints.push({ x, y: 100, z: 1500, radius });
+  setTimeout(spawnVescoPoint, Math.random() * 3000 + 2000);
+}
+
+function project(x, y, z) {
+  const scale = focalLength / (focalLength + z);
+  return {
+    x: (canvasElement.width / 2) + x * scale,
+    y: (canvasElement.height / 2) + y * scale,
+    scale: scale
+  };
 }
 
 function drawPlayer() {
+  const p = project(playerX, 100, 0); // Player is at z=0, y=100
   canvasCtx.beginPath();
-  canvasCtx.arc(playerX, canvasElement.height - 50, playerRadius, 0, 2 * Math.PI);
+  canvasCtx.arc(p.x, p.y, playerRadius * p.scale, 0, 2 * Math.PI);
   canvasCtx.fillStyle = '#01ffc3';
   canvasCtx.shadowColor = '#01ffc3';
   canvasCtx.shadowBlur = 15;
@@ -92,33 +102,55 @@ function drawPlayer() {
   canvasCtx.shadowBlur = 0;
 }
 
+function drawGrid() {
+  canvasCtx.strokeStyle = 'rgba(5, 217, 232, 0.3)';
+  canvasCtx.lineWidth = 1;
+  // Draw ground grid
+  for (let z = 0; z <= 1500; z += 100) {
+    let p1 = project(-500, 150, z);
+    let p2 = project(500, 150, z);
+    canvasCtx.beginPath();
+    canvasCtx.moveTo(p1.x, p1.y);
+    canvasCtx.lineTo(p2.x, p2.y);
+    canvasCtx.stroke();
+  }
+}
+
 function drawObstacles() {
   canvasCtx.fillStyle = '#ff2a6d';
   canvasCtx.shadowColor = '#ff2a6d';
   canvasCtx.shadowBlur = 15;
-  obstacles.forEach(obs => {
-    canvasCtx.fillRect(obs.x, obs.y, obs.width, obs.height);
+  
+  // Sort by z descending
+  obstacles.sort((a, b) => b.z - a.z).forEach(obs => {
+    const p = project(obs.x, obs.y, obs.z);
+    if (p.scale > 0) {
+      canvasCtx.fillRect(p.x - (obs.width/2)*p.scale, p.y - (obs.height/2)*p.scale, obs.width * p.scale, obs.height * p.scale);
+    }
   });
   canvasCtx.shadowBlur = 0;
 }
 
 function drawVescoPoints() {
   canvasCtx.shadowBlur = 15;
-  vescoPoints.forEach(vp => {
-    canvasCtx.fillStyle = '#ffaa00';
-    canvasCtx.shadowColor = '#ffaa00';
-    canvasCtx.beginPath();
-    canvasCtx.arc(vp.x, vp.y, vp.radius, 0, 2 * Math.PI);
-    canvasCtx.fill();
-    canvasCtx.closePath();
-    
-    canvasCtx.shadowBlur = 0;
-    canvasCtx.fillStyle = '#000';
-    canvasCtx.font = 'bold 16px Courier New';
-    canvasCtx.textAlign = 'center';
-    canvasCtx.textBaseline = 'middle';
-    canvasCtx.fillText('V', vp.x, vp.y);
-    canvasCtx.shadowBlur = 15;
+  vescoPoints.sort((a, b) => b.z - a.z).forEach(vp => {
+    const p = project(vp.x, vp.y, vp.z);
+    if (p.scale > 0) {
+      canvasCtx.fillStyle = '#ffaa00';
+      canvasCtx.shadowColor = '#ffaa00';
+      canvasCtx.beginPath();
+      canvasCtx.arc(p.x, p.y, vp.radius * p.scale, 0, 2 * Math.PI);
+      canvasCtx.fill();
+      canvasCtx.closePath();
+      
+      canvasCtx.shadowBlur = 0;
+      canvasCtx.fillStyle = '#000';
+      canvasCtx.font = `bold ${Math.max(8, 16 * p.scale)}px Courier New`;
+      canvasCtx.textAlign = 'center';
+      canvasCtx.textBaseline = 'middle';
+      canvasCtx.fillText('V', p.x, p.y);
+      canvasCtx.shadowBlur = 15;
+    }
   });
   canvasCtx.shadowBlur = 0;
 }
@@ -128,34 +160,30 @@ function update() {
 
   canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
 
-  // Draw semi-transparent webcam feed as background
   canvasCtx.save();
   canvasCtx.globalAlpha = 0.3;
   canvasCtx.translate(canvasElement.width, 0);
   canvasCtx.scale(-1, 1);
   canvasCtx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
   canvasCtx.restore();
-  
-  canvasCtx.fillStyle = 'rgba(5, 217, 232, 0.05)';
-  for(let i=0; i<canvasElement.height; i+=4) {
-      canvasCtx.fillRect(0, i, canvasElement.width, 2);
-  }
 
-  drawPlayer();
+  drawGrid();
   drawObstacles();
   drawVescoPoints();
+  drawPlayer();
 
+  // Update logic
   for (let i = obstacles.length - 1; i >= 0; i--) {
-    obstacles[i].y += gameSpeed;
+    obstacles[i].z -= gameSpeed;
     
-    if (obstacles[i].y + obstacles[i].height > canvasElement.height - 50 - playerRadius &&
-        obstacles[i].y < canvasElement.height - 50 + playerRadius) {
-      if (playerX + playerRadius > obstacles[i].x && playerX - playerRadius < obstacles[i].x + obstacles[i].width) {
+    // Collision detection
+    if (Math.abs(obstacles[i].z) < 20) {
+      if (Math.abs(obstacles[i].x - playerX) < (obstacles[i].width/2 + playerRadius)) {
         gameOver();
       }
     }
 
-    if (obstacles[i].y > canvasElement.height) {
+    if (obstacles[i].z < -100) {
       obstacles.splice(i, 1);
       score += 10;
       scoreElement.innerText = score;
@@ -164,18 +192,16 @@ function update() {
   }
 
   for (let i = vescoPoints.length - 1; i >= 0; i--) {
-    vescoPoints[i].y += gameSpeed;
+    vescoPoints[i].z -= gameSpeed;
     
-    const dx = playerX - vescoPoints[i].x;
-    const dy = (canvasElement.height - 50) - vescoPoints[i].y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-    
-    if (distance < playerRadius + vescoPoints[i].radius) {
-      vescoPoints.splice(i, 1);
-      score += 50;
-      scoreElement.innerText = score;
-      triggerAIQuote();
-    } else if (vescoPoints[i].y > canvasElement.height) {
+    if (Math.abs(vescoPoints[i].z) < 20) {
+      if (Math.abs(vescoPoints[i].x - playerX) < (vescoPoints[i].radius + playerRadius)) {
+        vescoPoints.splice(i, 1);
+        score += 50;
+        scoreElement.innerText = score;
+        triggerAIQuote();
+      }
+    } else if (vescoPoints[i].z < -100) {
       vescoPoints.splice(i, 1);
     }
   }
@@ -186,6 +212,7 @@ function update() {
 function gameOver() {
   isGameOver = true;
   gameOverScreen.classList.remove('hidden');
+  bgm.pause();
 }
 
 restartBtn.addEventListener('click', () => {
@@ -193,13 +220,21 @@ restartBtn.addEventListener('click', () => {
   obstacles = [];
   vescoPoints = [];
   score = 0;
-  gameSpeed = 5;
+  gameSpeed = 10;
   scoreElement.innerText = score;
   gameOverScreen.classList.add('hidden');
+  bgm.play().catch(e=>console.log("Audio play failed:", e));
   spawnObstacle();
   spawnVescoPoint();
   update();
 });
+
+// Need to click anywhere to start music if autoplay is blocked
+document.body.addEventListener('click', () => {
+  if (!isGameOver && bgm.paused) {
+    bgm.play().catch(e=>console.log(e));
+  }
+}, {once: true});
 
 spawnObstacle();
 spawnVescoPoint();
