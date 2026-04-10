@@ -1,0 +1,103 @@
+:root {
+    --neon-pink: #ff2a6d;
+    --neon-blue: #05d9e8;
+    --neon-green: #01ffc3;
+    --dark-bg: #01012b;
+}
+
+body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--dark-bg);
+    color: var(--neon-blue);
+    font-family: 'Courier New', Courier, monospace;
+    overflow: hidden;
+}
+
+.grid-background {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: 
+        linear-gradient(rgba(5, 217, 232, 0.2) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(5, 217, 232, 0.2) 1px, transparent 1px);
+    background-size: 50px 50px;
+    z-index: -1;
+    perspective: 1000px;
+    transform: rotateX(60deg) translateY(-100px);
+    transform-origin: top;
+    animation: gridMove 2s linear infinite;
+}
+
+@keyframes gridMove {
+    0% { transform: rotateX(60deg) translateY(0); }
+    100% { transform: rotateX(60deg) translateY(50px); }
+}
+
+.ui {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 10;
+    text-shadow: 0 0 10px var(--neon-blue);
+}
+
+h1 {
+    margin: 0 0 10px 0;
+    color: var(--neon-pink);
+    text-shadow: 0 0 10px var(--neon-pink);
+}
+
+#game-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#webcam {
+    display: none;
+}
+
+#game-canvas {
+    width: 100%;
+    height: 100%;
+    max-width: 800px;
+    max-height: 600px;
+    border: 2px solid var(--neon-pink);
+    box-shadow: 0 0 20px var(--neon-pink);
+}
+
+.hidden {
+    display: none;
+}
+
+#game-over {
+    margin-top: 20px;
+}
+
+#game-over h2 {
+    color: #ff0000;
+    text-shadow: 0 0 10px #ff0000;
+}
+
+button {
+    background: transparent;
+    border: 2px solid var(--neon-green);
+    color: var(--neon-green);
+    padding: 10px 20px;
+    font-size: 1.2rem;
+    font-family: inherit;
+    cursor: pointer;
+    text-shadow: 0 0 5px var(--neon-green);
+    box-shadow: 0 0 10px var(--neon-green) inset, 0 0 10px var(--neon-green);
+    transition: all 0.3s;
+}
+
+button:hover {
+    background: var(--neon-green);
+    color: var(--dark-bg);
+}

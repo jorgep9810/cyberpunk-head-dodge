@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyberpunk Head Dodge</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- MediaPipe Face Mesh -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+</head>
+<body>
+    <div class="grid-background"></div>
+    <div class="ui">
+        <h1>CYBERPUNK HEAD DODGE</h1>
+        <p>Score: <span id="score">0</span></p>
+        <div id="game-over" class="hidden">
+            <h2>SYSTEM FAILURE</h2>
+            <button id="restart-btn">REBOOT</button>
+        </div>
+    </div>
+    <div id="game-container">
+        <video id="webcam" autoplay playsinline></video>
+        <canvas id="game-canvas"></canvas>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
