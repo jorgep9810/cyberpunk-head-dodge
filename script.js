@@ -4,12 +4,14 @@ const canvasCtx = canvasElement.getContext('2d');
 const scoreElement = document.getElementById('score');
 const gameOverScreen = document.getElementById('game-over');
 const restartBtn = document.getElementById('restart-btn');
+const startScreen = document.getElementById('start-screen');
+const startBtn = document.getElementById('start-btn');
 
 canvasElement.width = 800;
 canvasElement.height = 600;
 
 // Music
-const bgm = new Audio('https://cdn.pixabay.com/download/audio/2022/10/14/audio_9939f792cb.mp3');
+const bgm = new Audio('bgm.mp3');
 bgm.loop = true;
 bgm.volume = 0.3;
 
@@ -229,13 +231,10 @@ restartBtn.addEventListener('click', () => {
   update();
 });
 
-// Need to click anywhere to start music if autoplay is blocked
-document.body.addEventListener('click', () => {
-  if (!isGameOver && bgm.paused) {
-    bgm.play().catch(e=>console.log(e));
-  }
-}, {once: true});
-
-spawnObstacle();
-spawnVescoPoint();
-update();
+startBtn.addEventListener('click', () => {
+  startScreen.classList.add('hidden');
+  bgm.play().catch(e=>console.log("Audio play failed:", e));
+  spawnObstacle();
+  spawnVescoPoint();
+  update();
+});

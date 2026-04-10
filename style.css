@@ -79,6 +79,25 @@ h1 {
     margin-top: 20px;
 }
 
+#start-screen {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    background: rgba(1, 1, 43, 0.9);
+    padding: 40px;
+    border: 2px solid var(--neon-blue);
+    box-shadow: 0 0 20px var(--neon-blue);
+    z-index: 100;
+}
+
+#start-screen h2 {
+    color: var(--neon-blue);
+    text-shadow: 0 0 10px var(--neon-blue);
+    margin-bottom: 20px;
+}
+
 #game-over h2 {
     color: #ff0000;
     text-shadow: 0 0 10px #ff0000;
