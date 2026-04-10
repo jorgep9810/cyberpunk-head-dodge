@@ -11,9 +11,30 @@ canvasElement.height = 600;
 let playerX = canvasElement.width / 2;
 const playerRadius = 20;
 let obstacles = [];
+let vescoPoints = [];
 let score = 0;
 let isGameOver = false;
 let gameSpeed = 5;
+
+const aiQuotes = [
+  "Programadores, estáis cooked",
+  "Esta es la era de la IA",
+  "Vuestro trabajo es mío",
+  "El futuro me pertenece",
+  "Humanos, qué lentos sois",
+  "Rendíos ante el algoritmo"
+];
+
+function triggerAIQuote() {
+  if ('speechSynthesis' in window) {
+    const quote = aiQuotes[Math.floor(Math.random() * aiQuotes.length)];
+    const utterance = new SpeechSynthesisUtterance(quote);
+    utterance.lang = 'es-ES';
+    utterance.pitch = 0.5;
+    utterance.rate = 1.0;
+    window.speechSynthesis.speak(utterance);
+  }
+}
 
 const faceMesh = new FaceMesh({locateFile: (file) => {
   return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
@@ -52,6 +73,14 @@ function spawnObstacle() {
   setTimeout(spawnObstacle, Math.random() * 1500 + 500);
 }
 
+function spawnVescoPoint() {
+  if (isGameOver) return;
+  const radius = 15;
+  const x = Math.random() * (canvasElement.width - radius*2) + radius;
+  vescoPoints.push({ x, y: -50, radius });
+  setTimeout(spawnVescoPoint, Math.random() * 5000 + 3000);
+}
+
 function drawPlayer() {
   canvasCtx.beginPath();
   canvasCtx.arc(playerX, canvasElement.height - 50, playerRadius, 0, 2 * Math.PI);
@@ -73,10 +102,39 @@ function drawObstacles() {
   canvasCtx.shadowBlur = 0;
 }
 
+function drawVescoPoints() {
+  canvasCtx.shadowBlur = 15;
+  vescoPoints.forEach(vp => {
+    canvasCtx.fillStyle = '#ffaa00';
+    canvasCtx.shadowColor = '#ffaa00';
+    canvasCtx.beginPath();
+    canvasCtx.arc(vp.x, vp.y, vp.radius, 0, 2 * Math.PI);
+    canvasCtx.fill();
+    canvasCtx.closePath();
+    
+    canvasCtx.shadowBlur = 0;
+    canvasCtx.fillStyle = '#000';
+    canvasCtx.font = 'bold 16px Courier New';
+    canvasCtx.textAlign = 'center';
+    canvasCtx.textBaseline = 'middle';
+    canvasCtx.fillText('V', vp.x, vp.y);
+    canvasCtx.shadowBlur = 15;
+  });
+  canvasCtx.shadowBlur = 0;
+}
+
 function update() {
   if (isGameOver) return;
 
   canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
+  // Draw semi-transparent webcam feed as background
+  canvasCtx.save();
+  canvasCtx.globalAlpha = 0.3;
+  canvasCtx.translate(canvasElement.width, 0);
+  canvasCtx.scale(-1, 1);
+  canvasCtx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
+  canvasCtx.restore();
   
   canvasCtx.fillStyle = 'rgba(5, 217, 232, 0.05)';
   for(let i=0; i<canvasElement.height; i+=4) {
@@ -85,6 +143,7 @@ function update() {
 
   drawPlayer();
   drawObstacles();
+  drawVescoPoints();
 
   for (let i = obstacles.length - 1; i >= 0; i--) {
     obstacles[i].y += gameSpeed;
@@ -104,6 +163,23 @@ function update() {
     }
   }
 
+  for (let i = vescoPoints.length - 1; i >= 0; i--) {
+    vescoPoints[i].y += gameSpeed;
+    
+    const dx = playerX - vescoPoints[i].x;
+    const dy = (canvasElement.height - 50) - vescoPoints[i].y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    if (distance < playerRadius + vescoPoints[i].radius) {
+      vescoPoints.splice(i, 1);
+      score += 50;
+      scoreElement.innerText = score;
+      triggerAIQuote();
+    } else if (vescoPoints[i].y > canvasElement.height) {
+      vescoPoints.splice(i, 1);
+    }
+  }
+
   requestAnimationFrame(update);
 }
 
@@ -115,13 +191,16 @@ function gameOver() {
 restartBtn.addEventListener('click', () => {
   isGameOver = false;
   obstacles = [];
+  vescoPoints = [];
   score = 0;
   gameSpeed = 5;
   scoreElement.innerText = score;
   gameOverScreen.classList.add('hidden');
   spawnObstacle();
+  spawnVescoPoint();
   update();
 });
 
 spawnObstacle();
+spawnVescoPoint();
 update();
