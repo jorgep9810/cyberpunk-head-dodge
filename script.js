@@ -24,6 +24,7 @@ const voiceClips = [
 
 let playerX = 0; // World X
 const playerRadius = 20;
+let playerTrail = [];
 let obstacles = [];
 let vescoPoints = [];
 let score = 0;
@@ -93,6 +94,26 @@ function project(x, y, z) {
 }
 
 function drawPlayer() {
+  playerTrail.push({ x: playerX, alpha: 1.0 });
+  if (playerTrail.length > 15) {
+    playerTrail.shift();
+  }
+
+  playerTrail.forEach((pt, index) => {
+    pt.alpha -= 0.06;
+    if (pt.alpha > 0) {
+      const p = project(pt.x, 100, 0);
+      canvasCtx.beginPath();
+      canvasCtx.arc(p.x, p.y, playerRadius * p.scale * (index / playerTrail.length), 0, 2 * Math.PI);
+      canvasCtx.fillStyle = `rgba(1, 255, 195, ${pt.alpha})`;
+      canvasCtx.shadowColor = '#01ffc3';
+      canvasCtx.shadowBlur = 10;
+      canvasCtx.fill();
+      canvasCtx.closePath();
+    }
+  });
+  canvasCtx.shadowBlur = 0;
+
   const p = project(playerX, 100, 0); // Player is at z=0, y=100
   canvasCtx.beginPath();
   canvasCtx.arc(p.x, p.y, playerRadius * p.scale, 0, 2 * Math.PI);
@@ -221,6 +242,7 @@ restartBtn.addEventListener('click', () => {
   isGameOver = false;
   obstacles = [];
   vescoPoints = [];
+  playerTrail = [];
   score = 0;
   gameSpeed = 10;
   scoreElement.innerText = score;
