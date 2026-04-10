@@ -19,8 +19,16 @@ bgm.volume = 0.3;
 const voiceClips = [
   new Audio('voice1.mp3'),
   new Audio('voice2.mp3'),
-  new Audio('voice3.mp3')
+  new Audio('voice3.mp3'),
+  new Audio('voice4.mp3'),
+  new Audio('voice5.mp3'),
+  new Audio('voice6.mp3'),
+  new Audio('voice7.mp3'),
+  new Audio('voice8.mp3')
 ];
+
+let videoFrames = [];
+
 
 let playerX = 0; // World X
 const playerRadius = 20;
@@ -183,10 +191,29 @@ function update() {
 
   canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
 
+  // Capture current frame for trail
+  if (videoElement.readyState === videoElement.HAVE_ENOUGH_DATA) {
+    createImageBitmap(videoElement).then(bitmap => {
+      videoFrames.push(bitmap);
+      if (videoFrames.length > 10) {
+        let old = videoFrames.shift();
+        old.close();
+      }
+    }).catch(e => console.error(e));
+  }
+
   canvasCtx.save();
-  canvasCtx.globalAlpha = 0.3;
   canvasCtx.translate(canvasElement.width, 0);
   canvasCtx.scale(-1, 1);
+  
+  // Draw previous frames
+  videoFrames.forEach((frame, index) => {
+    canvasCtx.globalAlpha = 0.05 * (index / videoFrames.length);
+    canvasCtx.drawImage(frame, 0, 0, canvasElement.width, canvasElement.height);
+  });
+
+  // Draw current frame
+  canvasCtx.globalAlpha = 0.3;
   canvasCtx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
   canvasCtx.restore();
 
@@ -243,6 +270,8 @@ restartBtn.addEventListener('click', () => {
   obstacles = [];
   vescoPoints = [];
   playerTrail = [];
+  videoFrames.forEach(f => f.close());
+  videoFrames = [];
   score = 0;
   gameSpeed = 10;
   scoreElement.innerText = score;
